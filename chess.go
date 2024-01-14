@@ -1,5 +1,10 @@
 package main
 
+import (
+	"errors"
+	"strings"
+)
+
 type Piece byte
 
 // Value returns the value of the piece
@@ -80,4 +85,39 @@ func (a Board) String() (s string) {
 		s = s + "\n"
 	}
 	return s
+}
+
+func FEN(fen string) (b Board, err error) {
+	parts := strings.Split(fen, " ")
+	rows := strings.Split(parts[0], "/")
+	if len(rows) != 8 {
+		return b, errors.New("FEN should have 8 rows")
+	}
+	for i := 0; i < len(b); i++ {
+		b[i] = ' '
+	}
+	for i := 0; i < 8; i++ {
+		index := i*10 + 21
+		for _, c := range rows[i] {
+			q := Piece(c)
+			if q >= '1' && q <= '8' {
+				for j := Piece(0); q-j >= '1'; j++ {
+					b[index] = '.'
+					index++
+				}
+			} else if q.value() == 0 && q.Flip().value() == 0 {
+				return b, errors.New("invalid piece value: " + string(c))
+			} else {
+				b[index] = q
+				index++
+			}
+		}
+		if index%10 != 9 {
+			return b, errors.New("invalid row length")
+		}
+	}
+	if len(parts) > 1 && parts[1] == "b" {
+		b = b.Flip()
+	}
+	return b, nil
 }
